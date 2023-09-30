@@ -1,0 +1,50 @@
+version: "3.3"
+
+services:
+  dbpost:
+    image: postgres
+    restart: always
+    container_name: postgres_blogPlatform
+    volumes:
+      - type: bind
+        source: ./config/DBdata
+        target: /var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - ${DATABASE_HOST_PORT}:${DATABASE_CONTAINER_PORT}
+
+  app:
+    container_name: app_blogPlatform
+    command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && python manage.py runserver 0.0.0.0:${RUN_PORT}"
+    restart: always
+    build: .
+    env_file:
+      - ./.env
+    volumes:
+      - type: bind
+        source: .
+        target: /Pykan_last_version
+    ports:
+      - ${RUN_PORT_HOST}:${RUN_PORT}
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      - dbpost
+      - redis
+
+  redis:
+    hostname: redis
+    image: redis:alpine
+    container_name: redis_blogPlatform
+    restart: always
+    command: --port ${REDIS_PORT}
+    ports:
+      - ${REDIS_PORT_HOST}:${REDIS_PORT}
+    expose:
+      - ${REDIS_PORT}
+
